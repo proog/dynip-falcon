@@ -5,6 +5,7 @@ from datetime import datetime
 
 
 class Store:
+    redis_prefix = "dynip:"
 
     def __init__(self, inmemory_store: dict, redis_store: redis.StrictRedis):
         self.inmemory = inmemory_store if inmemory_store is not None else {}
@@ -23,7 +24,7 @@ class Store:
         if self.redis is None:
             self.inmemory[name] = info
         else:
-            self.redis.set("dynip:" + name, json.dumps(info))
+            self.redis.set(self.redis_prefix + name, json.dumps(info))
 
         return info
 
@@ -31,7 +32,7 @@ class Store:
         if self.redis is None:
             return self.inmemory.get(name)
 
-        info = self.redis.get("dynip:" + name)
+        info = self.redis.get(self.redis_prefix + name)
 
         if info is not None:
             info = json.loads(info.decode("utf-8"))
