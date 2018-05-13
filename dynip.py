@@ -1,21 +1,14 @@
 import falcon
-import json
-import redis
 import sqlite3
 from datetime import datetime
 from falcon import Request, Response, HTTPNotFound, HTTPBadRequest, HTTPUnauthorized
 
 
 class Store:
-    redis_prefix = "dynip:"
 
-    def __init__(
-        self, inmemory_store: sqlite3.Connection, redis_store: redis.StrictRedis
-    ):
-        self.inmemory = inmemory_store
-        self.redis = redis_store
-
-        inmemory_store.execute(
+    def __init__(self, db: sqlite3.Connection):
+        self.db = db
+        db.execute(
             """
             CREATE TABLE IF NOT EXISTS ips (
                 name text NOT NULL PRIMARY KEY,
@@ -25,42 +18,24 @@ class Store:
             """
         )
 
-        if redis_store is not None:
-            try:
-                redis_store.ping()
-            except:
-                print("Redis unavailable, falling back to in-memory store")
-                self.redis = None
-
     def save(self, name, ip):
-        info = {"ip": ip, "updated": datetime.utcnow().isoformat()}
+        updated = datetime.utcnow().isoformat()
 
-        if self.redis is None:
-            sql = "INSERT OR REPLACE INTO ips (name, ip, updated) VALUES (?, ?, ?)"
-            self.inmemory.execute(sql, (name, info["ip"], info["updated"]))
-            self.inmemory.commit()
-        else:
-            self.redis.set(self.redis_prefix + name, json.dumps(info))
+        sql = "INSERT OR REPLACE INTO ips (name, ip, updated) VALUES (?, ?, ?)"
+        self.db.execute(sql, (name, ip, updated))
+        self.db.commit()
 
-        return info
+        return {"ip": ip, "updated": updated}
 
     def load(self, name):
-        if self.redis is None:
-            sql = "SELECT ip, updated FROM ips WHERE name = ?"
-
-            info = self.inmemory.execute(sql, (name,)).fetchone()
-
-            if info is not None:
-                return {"ip": info[0], "updated": info[1]}
-
-            return info
-
-        info = self.redis.get(self.redis_prefix + name)
+        sql = "SELECT ip, updated FROM ips WHERE name = ?"
+        info = self.db.execute(sql, (name,)).fetchone()
 
         if info is not None:
-            info = json.loads(info.decode("utf-8"))
+            ip, updated = info
+            return {"ip": ip, "updated": updated}
 
-        return info
+        return None
 
 
 def normalize_name(req, res, resource, params: dict):

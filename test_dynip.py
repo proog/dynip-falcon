@@ -6,7 +6,7 @@ from dynip import create_app, Store
 
 @pytest.fixture
 def client():
-    store = Store(sqlite3.connect(":memory:"), None)
+    store = Store(sqlite3.connect(":memory:"))
     app = create_app(store, None)
     return testing.TestClient(app)
 
@@ -38,7 +38,7 @@ def test_get_notfound(client: testing.TestClient):
 
 
 def test_secret():
-    store = Store(sqlite3.connect(":memory:"), None)
+    store = Store(sqlite3.connect(":memory:"))
     client = testing.TestClient(create_app(store, "seeecret"))
 
     xs = {"x-secret": "seeecret"}
@@ -47,7 +47,7 @@ def test_secret():
 
 
 def test_secret_invalid():
-    store = Store(sqlite3.connect(":memory:"), None)
+    store = Store(sqlite3.connect(":memory:"))
     client = testing.TestClient(create_app(store, "seeecret"))
 
     xs = {"x-secret": "seeecret2"}
