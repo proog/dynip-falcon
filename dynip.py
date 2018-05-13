@@ -47,6 +47,7 @@ class Resource:
         self.secret = secret
 
     def on_get(self, req: falcon.Request, res: falcon.Response, name: str):
+        name = name.lower()
         info = self.store.load(name)
 
         if info is None:
@@ -58,6 +59,7 @@ class Resource:
         res.set_header("X-Updated", info["updated"])
 
     def on_put(self, req: falcon.Request, res: falcon.Response, name: str):
+        name = name.lower()
         secret_header = req.get_header("X-Secret")
 
         if self.secret is not None and secret_header != self.secret:

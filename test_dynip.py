@@ -54,3 +54,10 @@ def test_secret_invalid():
     res = client.simulate_put("/foo", headers=xs)
     assert res.status_code == 401
     assert res.text == "Invalid secret"
+
+
+def test_case_insensitivity(client: testing.TestClient):
+    client.simulate_put("/foo")
+    res = client.simulate_get("/FOO")
+    assert res.status_code == 200
+    assert res.text == "127.0.0.1"
