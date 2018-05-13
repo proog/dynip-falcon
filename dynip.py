@@ -2,6 +2,7 @@ import falcon
 import json
 import redis
 from datetime import datetime
+from falcon import Request, Response, HTTPNotFound, HTTPBadRequest, HTTPUnauthorized
 
 
 class Store:
@@ -40,33 +41,38 @@ class Store:
         return info
 
 
+def normalize_name(req, res, resource, params: dict):
+    params["name"] = params["name"].lower().strip()
+
+
+def validate_name(req, res, resource, params: dict):
+    if len(params["name"]) == 0:
+        raise HTTPBadRequest()
+
+
+@falcon.before(normalize_name)
+@falcon.before(validate_name)
 class Resource:
 
     def __init__(self, store: Store, secret: str):
         self.store = store
         self.secret = secret
 
-    def on_get(self, req: falcon.Request, res: falcon.Response, name: str):
-        name = name.lower()
+    def on_get(self, req: Request, res: Response, name: str):
         info = self.store.load(name)
 
         if info is None:
-            res.status = falcon.HTTP_NOT_FOUND
-            res.body = "%s not found" % name
-            return
+            raise HTTPNotFound()
 
         res.body = info["ip"]
         res.set_header("X-Updated", info["updated"])
 
-    def on_put(self, req: falcon.Request, res: falcon.Response, name: str):
-        name = name.lower()
+    def on_put(self, req: Request, res: Response, name: str):
         secret_header = req.get_header("X-Secret")
 
         if self.secret is not None and secret_header != self.secret:
             print("PUT %s (invalid secret %s)" % (name, secret_header))
-            res.status = falcon.HTTP_UNAUTHORIZED
-            res.body = "Invalid secret"
-            return
+            raise HTTPUnauthorized()
 
         info = self.store.save(name, req.access_route[0])
         print("PUT %s = %s" % (name, info["ip"]))

@@ -34,7 +34,6 @@ def test_get(client: testing.TestClient):
 def test_get_notfound(client: testing.TestClient):
     res = client.simulate_get("/foo")
     assert res.status_code == 404
-    assert res.text == "foo not found"
 
 
 def test_secret():
@@ -53,7 +52,6 @@ def test_secret_invalid():
     xs = {"x-secret": "seeecret2"}
     res = client.simulate_put("/foo", headers=xs)
     assert res.status_code == 401
-    assert res.text == "Invalid secret"
 
 
 def test_case_insensitivity(client: testing.TestClient):
@@ -61,3 +59,8 @@ def test_case_insensitivity(client: testing.TestClient):
     res = client.simulate_get("/FOO")
     assert res.status_code == 200
     assert res.text == "127.0.0.1"
+
+
+def test_empty_name(client: testing.TestClient):
+    res = client.simulate_put("/")
+    assert res.status_code == 400
