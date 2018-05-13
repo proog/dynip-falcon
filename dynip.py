@@ -1,6 +1,7 @@
 import falcon
 import json
 import redis
+import sqlite3
 from datetime import datetime
 from falcon import Request, Response, HTTPNotFound, HTTPBadRequest, HTTPUnauthorized
 
@@ -8,9 +9,21 @@ from falcon import Request, Response, HTTPNotFound, HTTPBadRequest, HTTPUnauthor
 class Store:
     redis_prefix = "dynip:"
 
-    def __init__(self, inmemory_store: dict, redis_store: redis.StrictRedis):
-        self.inmemory = inmemory_store if inmemory_store is not None else {}
+    def __init__(
+        self, inmemory_store: sqlite3.Connection, redis_store: redis.StrictRedis
+    ):
+        self.inmemory = inmemory_store
         self.redis = redis_store
+
+        inmemory_store.execute(
+            """
+            CREATE TABLE IF NOT EXISTS ips (
+                name text NOT NULL PRIMARY KEY,
+                ip text NOT NULL,
+                updated text NOT NULL
+            )
+            """
+        )
 
         if redis_store is not None:
             try:
@@ -23,7 +36,9 @@ class Store:
         info = {"ip": ip, "updated": datetime.utcnow().isoformat()}
 
         if self.redis is None:
-            self.inmemory[name] = info
+            sql = "INSERT OR REPLACE INTO ips (name, ip, updated) VALUES (?, ?, ?)"
+            self.inmemory.execute(sql, (name, info["ip"], info["updated"]))
+            self.inmemory.commit()
         else:
             self.redis.set(self.redis_prefix + name, json.dumps(info))
 
@@ -31,7 +46,14 @@ class Store:
 
     def load(self, name):
         if self.redis is None:
-            return self.inmemory.get(name)
+            sql = "SELECT ip, updated FROM ips WHERE name = ?"
+
+            info = self.inmemory.execute(sql, (name,)).fetchone()
+
+            if info is not None:
+                return {"ip": info[0], "updated": info[1]}
+
+            return info
 
         info = self.redis.get(self.redis_prefix + name)
 
