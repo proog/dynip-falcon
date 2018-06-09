@@ -1,41 +1,6 @@
 import falcon
-import sqlite3
-from datetime import datetime
 from falcon import Request, Response, HTTPNotFound, HTTPBadRequest, HTTPUnauthorized
-
-
-class Store:
-
-    def __init__(self, db: sqlite3.Connection):
-        self.db = db
-        db.execute(
-            """
-            CREATE TABLE IF NOT EXISTS ips (
-                name text NOT NULL PRIMARY KEY,
-                ip text NOT NULL,
-                updated text NOT NULL
-            )
-            """
-        )
-
-    def save(self, name, ip):
-        updated = datetime.utcnow().isoformat()
-
-        sql = "INSERT OR REPLACE INTO ips (name, ip, updated) VALUES (?, ?, ?)"
-        self.db.execute(sql, (name, ip, updated))
-        self.db.commit()
-
-        return {"ip": ip, "updated": updated}
-
-    def load(self, name):
-        sql = "SELECT ip, updated FROM ips WHERE name = ?"
-        info = self.db.execute(sql, (name,)).fetchone()
-
-        if info is not None:
-            ip, updated = info
-            return {"ip": ip, "updated": updated}
-
-        return None
+from stores import Store
 
 
 def normalize_name(req, res, resource, params: dict):
@@ -43,7 +8,8 @@ def normalize_name(req, res, resource, params: dict):
 
 
 def validate_name(req, res, resource, params: dict):
-    if len(params["name"]) == 0:
+    l = len(params["name"])
+    if l < 1 or l > 50:
         raise HTTPBadRequest()
 
 

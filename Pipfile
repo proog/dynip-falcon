@@ -6,6 +6,7 @@ name = "pypi"
 [packages]
 falcon = "*"
 gunicorn = "*"
+mysql-connector-python-rf = "*"
 
 [dev-packages]
 rope = "*"
