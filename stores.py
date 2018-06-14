@@ -79,6 +79,7 @@ class MySqlStore(Store):
         cursor = self.db.cursor()
         cursor.execute(sql, (name,))
         info = cursor.fetchone()
+        self.db.commit()
         cursor.close()
 
         if info is not None:
