@@ -11,6 +11,9 @@ WORKDIR /app
 COPY Pipfile Pipfile.lock ./
 RUN pipenv install --deploy --system
 
+RUN adduser -S dynip
+USER dynip
+
 COPY *.py ./
 
 EXPOSE 42514
