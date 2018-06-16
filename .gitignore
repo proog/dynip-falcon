@@ -3,5 +3,5 @@ __pycache__
 .vscode/
 .pytest_cache/
 dynip.db
-dynip.*.ini
+*.ini
 !dynip.dev.ini
