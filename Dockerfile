@@ -10,11 +10,10 @@ WORKDIR /app
 
 COPY Pipfile Pipfile.lock ./
 RUN pipenv install --deploy --system
-
-RUN adduser -S dynip
-USER dynip
-
 COPY *.py ./
 
+RUN addgroup -S dynip && adduser -S -G dynip dynip && chown -R dynip:dynip ./
+USER dynip
+
 EXPOSE 42514
-CMD [ "gunicorn", "--bind", "0.0.0.0:42514", "app:app" ]
+ENTRYPOINT [ "gunicorn", "--bind", "0.0.0.0:42514", "app:app" ]
