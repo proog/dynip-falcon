@@ -1,13 +1,26 @@
 import pytest
 import sqlite3
+from datetime import datetime
 from falcon import testing
 from dynip import create_app
-from stores import SqliteStore
+from stores import Store
+
+
+class MockStore(Store):
+    def __init__(self):
+        self.ips = dict()
+
+    def save(self, name, ip):
+        self.ips[name] = {"ip": ip, "updated": datetime.utcnow().isoformat()}
+        return self.ips[name]
+
+    def load(self, name):
+        return self.ips.get(name)
 
 
 @pytest.fixture
 def client():
-    store = SqliteStore(sqlite3.connect(":memory:"))
+    store = MockStore()
     app = create_app(store, None)
     return testing.TestClient(app)
 
@@ -39,7 +52,7 @@ def test_get_notfound(client: testing.TestClient):
 
 
 def test_secret():
-    store = SqliteStore(sqlite3.connect(":memory:"))
+    store = MockStore()
     client = testing.TestClient(create_app(store, "seeecret"))
 
     xs = {"x-secret": "seeecret"}
@@ -48,7 +61,7 @@ def test_secret():
 
 
 def test_secret_invalid():
-    store = SqliteStore(sqlite3.connect(":memory:"))
+    store = MockStore()
     client = testing.TestClient(create_app(store, "seeecret"))
 
     xs = {"x-secret": "seeecret2"}

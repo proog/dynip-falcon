@@ -1,6 +1,4 @@
 import os
-import sqlite3
-import mysql.connector
 from configparser import ConfigParser
 from dynip import create_app
 from stores import SqliteStore, MySqlStore
@@ -9,10 +7,17 @@ from stores import SqliteStore, MySqlStore
 def create_store(config):
     if config["dynip"]["database"] == "mysql":
         print("Using MySQL")
-        return MySqlStore(mysql.connector.connect(**config["mysql"]))
+
+        options = dict(config["mysql"])
+
+        # pymysql can't deal with a port string
+        if "port" in options:
+            options["port"] = int(options["port"])
+
+        return MySqlStore(**options)
 
     print("Using SQLite")
-    return SqliteStore(sqlite3.connect(**config["sqlite"]))
+    return SqliteStore(**config["sqlite"])
 
 
 env = os.getenv("DYNIP_ENVIRONMENT", "dev")

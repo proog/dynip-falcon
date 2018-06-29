@@ -1,10 +1,9 @@
 import sqlite3
-import mysql.connector
+import pymysql
 from datetime import datetime
 
 
 class Store:
-
     def save(self, name, ip):
         raise NotImplementedError
 
@@ -13,9 +12,10 @@ class Store:
 
 
 class SqliteStore(Store):
+    def __init__(self, **options):
+        self.db_options = options
 
-    def __init__(self, db: sqlite3.Connection):
-        self.db = db
+        db = self._connect()
         db.execute(
             """
             CREATE TABLE IF NOT EXISTS ips (
@@ -25,65 +25,78 @@ class SqliteStore(Store):
             )
             """
         )
+        db.commit()
+        db.close()
 
     def save(self, name, ip):
         updated = datetime.utcnow().isoformat()
 
+        db = self._connect()
         sql = "REPLACE INTO ips (name, ip, updated) VALUES (?, ?, ?)"
-        self.db.execute(sql, (name, ip, updated))
-        self.db.commit()
+        db.execute(sql, (name, ip, updated))
+        db.commit()
+        db.close()
 
         return {"ip": ip, "updated": updated}
 
     def load(self, name):
+        db = self._connect()
         sql = "SELECT ip, updated FROM ips WHERE name = ?"
-        info = self.db.execute(sql, (name,)).fetchone()
+        info = db.execute(sql, (name,)).fetchone()
+        db.close()
 
         if info is not None:
             ip, updated = info
             return {"ip": ip, "updated": updated}
 
         return None
+
+    def _connect(self):
+        return sqlite3.connect(**self.db_options)
 
 
 class MySqlStore(Store):
+    def __init__(self, **options):
+        self.db_options = options
 
-    def __init__(self, db: mysql.connector.MySQLConnection):
-        self.db = db
-        cursor = db.cursor()
-        cursor.execute("SET NAMES utf8mb4")
-        cursor.execute(
-            """
-            CREATE TABLE IF NOT EXISTS ips (
-                name varchar(50) NOT NULL PRIMARY KEY,
-                ip varchar(50) NOT NULL,
-                updated varchar(50) NOT NULL
+        db = self._connect()
+        with db.cursor() as cursor:
+            cursor.execute(
+                """
+                CREATE TABLE IF NOT EXISTS ips (
+                    name varchar(50) NOT NULL PRIMARY KEY,
+                    ip varchar(50) NOT NULL,
+                    updated varchar(50) NOT NULL
+                )
+                """
             )
-            """
-        )
-        cursor.close()
+        db.close()
 
     def save(self, name, ip):
         updated = datetime.utcnow().isoformat()
 
-        sql = "REPLACE INTO ips (name, ip, updated) VALUES (%s, %s, %s)"
-        cursor = self.db.cursor()
-        cursor.execute(sql, (name, ip, updated))
-        self.db.commit()
-        cursor.close()
+        db = self._connect()
+        with db.cursor() as cursor:
+            sql = "REPLACE INTO ips (name, ip, updated) VALUES (%s, %s, %s)"
+            cursor.execute(sql, (name, ip, updated))
+        db.commit()
+        db.close()
 
         return {"ip": ip, "updated": updated}
 
     def load(self, name):
-        sql = "SELECT ip, updated FROM ips WHERE name = %s"
-        cursor = self.db.cursor()
-        cursor.execute(sql, (name,))
-        info = cursor.fetchone()
-        self.db.commit()
-        cursor.close()
+        db = self._connect()
+        with db.cursor() as cursor:
+            sql = "SELECT ip, updated FROM ips WHERE name = %s"
+            cursor.execute(sql, (name,))
+            info = cursor.fetchone()
+        db.close()
 
         if info is not None:
             ip, updated = info
             return {"ip": ip, "updated": updated}
 
         return None
+
+    def _connect(self):
+        return pymysql.connect(**self.db_options)
