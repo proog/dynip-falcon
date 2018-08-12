@@ -13,4 +13,5 @@ RUN pipenv install --deploy --system
 COPY *.py ./
 
 EXPOSE 42514
-ENTRYPOINT [ "gunicorn", "--bind", "0.0.0.0:42514", "app:app" ]
+ENTRYPOINT [ "gunicorn", "app:app" ]
+CMD [ "--bind", "0.0.0.0:42514" ]
