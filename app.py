@@ -1,11 +1,11 @@
 import os
-from configparser import ConfigParser
+import dotenv
 from dynip import create_app
 from stores import SqliteStore, MySqlStore
 
 
 def create_store(config):
-    if config["dynip"]["database"] == "mysql":
+    if config["database"] == "mysql":
         print("Using MySQL")
 
         options = dict(config["mysql"])
@@ -20,12 +20,22 @@ def create_store(config):
     return SqliteStore(**config["sqlite"])
 
 
-env = os.getenv("DYNIP_ENVIRONMENT", "dev")
-config = ConfigParser()
-config.read("dynip.%s.ini" % env)
+dotenv.load_dotenv()
+config = {
+    "database": os.getenv("DYNIP_DATABASE", "sqlite"),
+    "sqlite": {"database": os.getenv("DYNIP_SQLITE_DATABASE", "dynip.db")},
+    "mysql": {
+        "host": os.getenv("DYNIP_MYSQL_HOST", "127.0.0.1"),
+        "port": os.getenv("DYNIP_MYSQL_PORT"),
+        "database": os.getenv("DYNIP_MYSQL_DATABASE", "dynip"),
+        "user": os.getenv("DYNIP_MYSQL_USER", "root"),
+        "password": os.getenv("DYNIP_MYSQL_PASSWORD"),
+        "charset": os.getenv("DYNIP_MYSQL_CHARSET", "utf8mb4"),
+    },
+}
 
 store = create_store(config)
-secret = config["dynip"].get("secret")
+secret = os.getenv("DYNIP_SECRET")
 print("Not using a secret" if secret is None else 'Using secret "%s"' % secret)
 
 app = create_app(store, secret)
