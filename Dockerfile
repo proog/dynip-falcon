@@ -12,6 +12,6 @@ COPY Pipfile Pipfile.lock ./
 RUN pipenv install --deploy --system
 COPY *.py ./
 
-EXPOSE 42514
+EXPOSE 80
 ENTRYPOINT [ "gunicorn", "app:app" ]
-CMD [ "--bind", "0.0.0.0:42514" ]
+CMD [ "--bind", "0.0.0.0:80" ]
