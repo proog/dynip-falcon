@@ -26,9 +26,9 @@ config = {
     "sqlite": {"database": os.getenv("DYNIP_SQLITE_DATABASE", "dynip.db")},
     "mysql": {
         "host": os.getenv("DYNIP_MYSQL_HOST", "127.0.0.1"),
-        "port": os.getenv("DYNIP_MYSQL_PORT"),
-        "database": os.getenv("DYNIP_MYSQL_DATABASE", "dynip"),
-        "user": os.getenv("DYNIP_MYSQL_USER", "root"),
+        "port": os.getenv("DYNIP_MYSQL_PORT", "3306"),
+        "database": os.getenv("DYNIP_MYSQL_DATABASE"),
+        "user": os.getenv("DYNIP_MYSQL_USER"),
         "password": os.getenv("DYNIP_MYSQL_PASSWORD"),
         "charset": os.getenv("DYNIP_MYSQL_CHARSET", "utf8mb4"),
     },
