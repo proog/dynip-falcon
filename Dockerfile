@@ -10,8 +10,10 @@ WORKDIR /app
 
 COPY Pipfile Pipfile.lock ./
 RUN pipenv install --deploy --system
-COPY *.py ./
+
+COPY wsgi.py ./
+COPY dynip dynip/
 
 EXPOSE 80
-ENTRYPOINT [ "gunicorn", "app:app" ]
+ENTRYPOINT [ "gunicorn", "wsgi" ]
 CMD [ "--bind", "0.0.0.0:80" ]

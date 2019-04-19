@@ -1,6 +1,6 @@
 import falcon
 from falcon import Request, Response, HTTPNotFound, HTTPBadRequest, HTTPUnauthorized
-from stores import Store
+from .stores import Store
 
 
 def normalize_name(req, res, resource, params: dict):
@@ -15,8 +15,7 @@ def validate_name(req, res, resource, params: dict):
 
 @falcon.before(normalize_name)
 @falcon.before(validate_name)
-class Resource:
-
+class IPResource:
     def __init__(self, store: Store, secret: str):
         self.store = store
         self.secret = secret
@@ -42,12 +41,3 @@ class Resource:
 
         res.body = info["ip"]
         res.set_header("X-Updated", info["updated"])
-
-
-def create_app(store, secret):
-    app = falcon.API(media_type=falcon.MEDIA_TEXT)
-
-    resource = Resource(store, secret)
-    app.add_route("/{name}", resource)
-
-    return app

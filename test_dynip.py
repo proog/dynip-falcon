@@ -2,8 +2,8 @@ import pytest
 import sqlite3
 from datetime import datetime
 from falcon import testing
-from dynip import create_app
-from stores import Store
+from dynip.app import create_app
+from dynip.stores import Store
 
 
 class MockStore(Store):
